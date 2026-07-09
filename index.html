@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>5S Audit</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1c1c1c">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgenjs.bundle.js"></script>
+<style>
+  :root{
+    --ink:#1c1c1c;
+    --panel:#232323;
+    --panel2:#2c2c2c;
+    --amber:#f2b705;
+    --line:#3a3a3a;
+    --ok:#3fae5c;
+    --ng:#d9463c;
+    --obs:#e0a13a;
+    --muted:#9a9a95;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;background:var(--ink);color:#eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  body{padding-bottom:100px;}
+
+  .topbar{position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:3px solid var(--amber); padding:14px 16px 12px;}
+  .topbar .eyebrow{font-size:10.5px; letter-spacing:3px; text-transform:uppercase; color:var(--amber); font-weight:700; margin-bottom:2px;}
+  .topbar h1{margin:0; font-size:21px; font-weight:800; letter-spacing:-0.3px; color:#fff;}
+  .topbar .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+  .stripes{height:6px; width:100%; background: repeating-linear-gradient(135deg, var(--amber), var(--amber) 10px, #1c1c1c 10px, #1c1c1c 20px);}
+
+  section{padding:16px;}
+  .card{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px;}
+  .card h2{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--amber); margin:0 0 12px; font-weight:800; display:flex; align-items:center; gap:8px; justify-content:space-between;}
+  .card h2 .lbl{display:flex; align-items:center; gap:8px;}
+  .card h2 .lbl::before{content:""; width:14px; height:2px; background:var(--amber); display:inline-block;}
+
+  label{display:block; font-size:11.5px; color:var(--muted); margin:10px 0 5px; font-weight:600; letter-spacing:0.3px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=date], select, textarea{
+    width:100%; background:#1a1a1a; border:1px solid var(--line); color:#fff;
+    padding:11px 10px; border-radius:7px; font-size:15px; font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber);}
+  textarea{resize:vertical; min-height:60px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  /* unit tabs */
+  .tabs{display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch;}
+  .tab{
+    flex-shrink:0; background:#1a1a1a; border:1px solid var(--line); color:var(--muted);
+    padding:8px 12px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; cursor:pointer;
+  }
+  .tab.active{border-color:var(--amber); color:var(--amber); background:#2a2410;}
+  .tab.addtab{color:var(--amber); border-style:dashed;}
+  .unit-meta{font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;}
+  .unit-meta b{color:#ddd;}
+  .unit-edit-link{color:var(--amber); font-size:10.5px; font-weight:700; cursor:pointer; text-decoration:underline; margin-top:6px; display:inline-block;}
+
+  .unit-form{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);}
+  .mini-btn-row{display:flex; gap:8px; margin-top:12px;}
+  .mini-btn{flex:1; padding:10px; border-radius:7px; font-size:12.5px; font-weight:800; border:none; cursor:pointer; text-transform:uppercase;}
+  .mini-btn.save{background:var(--amber); color:#1c1c1c;}
+  .mini-btn.cancel{background:#3a3a3a; color:#ccc;}
+
+  .pillars{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
+  .pillar-btn{background:#1a1a1a; border:1px solid var(--line); color:var(--muted); padding:8px 2px; border-radius:7px; font-size:10.5px; font-weight:700; text-align:center; cursor:pointer; line-height:1.3;}
+  .pillar-btn .jp{display:block; font-size:15px; margin-bottom:2px;}
+  .pillar-btn.active{border-color:var(--amber); color:var(--amber); background:#2a2410;}
+
+  .status-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .status-btn{border:1px solid var(--line); background:#1a1a1a; color:var(--muted); padding:10px 4px; border-radius:7px; font-size:12px; font-weight:700; text-align:center; cursor:pointer;}
+  .status-btn.active[data-v="ok"]{background:rgba(63,174,92,0.15); border-color:var(--ok); color:var(--ok);}
+  .status-btn.active[data-v="obs"]{background:rgba(224,161,58,0.15); border-color:var(--obs); color:var(--obs);}
+  .status-btn.active[data-v="ng"]{background:rgba(217,70,60,0.15); border-color:var(--ng); color:var(--ng);}
+
+  .photo-zone{display:flex; gap:10px; align-items:center; margin-top:4px;}
+  .photo-btn{flex:1; border:2px dashed var(--line); border-radius:8px; background:#1a1a1a; color:var(--amber); padding:16px 8px; text-align:center; font-size:13px; font-weight:700; cursor:pointer;}
+  .photo-preview{width:64px; height:64px; border-radius:8px; object-fit:cover; border:1px solid var(--line); display:none;}
+  .photo-preview.show{display:block;}
+
+  .voice-btn{
+    width:100%; margin-top:12px; background:#1a1a1a; border:1.5px solid var(--amber); color:var(--amber);
+    padding:11px; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .voice-btn.listening{background:rgba(242,183,5,0.15); animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,183,5,0.4);} 70%{box-shadow:0 0 0 10px rgba(242,183,5,0);} 100%{box-shadow:0 0 0 0 rgba(242,183,5,0);}}
+  .voice-status{font-size:11px; color:var(--muted); text-align:center; margin-top:6px; min-height:14px;}
+
+  .add-btn{width:100%; margin-top:14px; background:var(--amber); color:#1c1c1c; border:none; padding:13px; border-radius:8px; font-size:14px; font-weight:800; letter-spacing:0.5px; cursor:pointer; text-transform:uppercase;}
+  .add-btn:active{transform:scale(0.98);}
+  .add-btn:disabled{background:#555; color:#999;}
+
+  .disabled-note{text-align:center; padding:20px 10px; color:var(--muted); font-size:13px;}
+
+  .summary-strip{display:flex; gap:8px; margin-bottom:12px;}
+  .sum-chip{flex:1; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 4px; text-align:center;}
+  .sum-chip .n{font-size:20px; font-weight:800; color:#fff; display:block;}
+  .sum-chip .l{font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+  .sum-chip.ng .n{color:var(--ng);}
+  .sum-chip.obs .n{color:var(--obs);}
+  .sum-chip.ok .n{color:var(--ok);}
+
+  .group-header{font-size:11px; font-weight:800; color:var(--amber); text-transform:uppercase; letter-spacing:1px; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;}
+  .group-header:first-child{margin-top:0;}
+  .group-header .gh-meta{font-size:9.5px; color:var(--muted); text-transform:none; letter-spacing:0; font-weight:600;}
+
+  .item{min-height:80px; display:flex; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px; margin-bottom:9px; align-items:flex-start;}
+  .item img{width:56px; height:56px; border-radius:6px; object-fit:cover; flex-shrink:0;}
+  .item .noimg{width:56px; height:56px; border-radius:6px; background:#1a1a1a; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--muted); text-align:center;}
+  .item-body{flex:1; min-width:0;}
+  .item-top{display:flex; justify-content:space-between; gap:6px; align-items:baseline;}
+  .item-tag{font-size:9.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--amber);}
+  .item-status{font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:20px; text-transform:uppercase;}
+  .item-status.ok{background:rgba(63,174,92,0.15); color:var(--ok);}
+  .item-status.obs{background:rgba(224,161,58,0.15); color:var(--obs);}
+  .item-status.ng{background:rgba(217,70,60,0.15); color:var(--ng);}
+  .item-area{font-size:13.5px; font-weight:700; color:#fff; margin-top:2px;}
+  .item-obs{font-size:12.5px; color:#ccc; margin-top:3px; line-height:1.4;}
+  .item-actions{display:flex; flex-direction:column; gap:6px;}
+  .item-actions button{background:none; border:none; font-size:15px; padding:0 4px; cursor:pointer; line-height:1;}
+  .item-actions .edit-i{color:var(--amber);}
+  .item-actions .del-i{color:#8a5555;}
+
+  /* inline edit form */
+  .item-edit-body{flex:1; min-width:0;}
+  .item-edit-body select, .item-edit-body input, .item-edit-body textarea{padding:7px 8px; font-size:12.5px; margin-bottom:6px; border-radius:6px;}
+  .item-edit-body textarea{min-height:44px;}
+  .edit-status-row{display:flex; gap:5px; margin-bottom:6px;}
+  .edit-status-row .status-btn{padding:6px 2px; font-size:10px;}
+  .edit-save-row{display:flex; gap:6px;}
+  .edit-save-row button{flex:1; padding:7px; font-size:11px; font-weight:800; border:none; border-radius:6px; cursor:pointer; text-transform:uppercase;}
+  .edit-save-row .save-i{background:var(--amber); color:#1c1c1c;}
+  .edit-save-row .cancel-i{background:#3a3a3a; color:#ccc;}
+
+  .empty{text-align:center; padding:30px 10px; color:var(--muted); font-size:13px;}
+
+  .archive-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#1a1a1a; border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px;}
+  .archive-info{flex:1 1 100%; min-width:0;}
+  .archive-btn-group{display:flex; gap:6px; flex:1;}
+  .archive-info .a-title{font-size:13px; font-weight:700; color:#fff;}
+  .archive-info .a-sub{font-size:10.5px; color:var(--muted); margin-top:2px;}
+  .archive-pdf-btn{background:var(--amber); color:#1c1c1c; border:none; padding:8px 12px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; text-transform:uppercase; flex-shrink:0;}
+
+  .footer-bar{position:fixed; bottom:0; left:0; right:0; z-index:30; background:var(--panel); border-top:1px solid var(--line); padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px;}
+  .footer-bar button{flex:1; padding:13px 6px; border-radius:8px; font-size:13px; font-weight:800; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:0.4px;}
+  .btn-pdf{background:var(--amber); color:#1c1c1c;}
+  .btn-clear{background:#3a2020; color:#e08a8a;}
+  .btn-pdf:disabled{background:#555; color:#999;}
+
+  .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:#222; border:1px solid var(--amber); color:#fff; padding:9px 16px; border-radius:20px; font-size:12.5px; z-index:50; opacity:0; transition:opacity 0.25s; pointer-events:none; max-width:85%; text-align:center;}
+  .toast.show{opacity:1;}
+
+  input[type=file]{display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="eyebrow">Shop Floor · Workplace Organization</div>
+  <h1>5S Audit</h1>
+  <div class="sub" id="headerSub">New audit · no items captured</div>
+</div>
+<div class="stripes"></div>
+
+<section>
+
+  <!-- AUDITOR (persists until New Audit) -->
+  <div class="card">
+    <h2><span class="lbl">Auditor</span></h2>
+    <input type="text" id="fAuditor" placeholder="Auditor name">
+  </div>
+
+  <!-- PLANT / UNIT TABS -->
+  <div class="card">
+    <h2><span class="lbl">Plant / Unit</span></h2>
+    <div class="tabs" id="unitTabs"></div>
+    <div id="unitMetaBox"></div>
+    <div class="unit-form" id="unitForm" style="display:none;">
+      <label>Plant / Unit Name</label>
+      <input type="text" id="ufPlant" placeholder="e.g. Assembly Line 2">
+      <label>Responsibility</label>
+      <input type="text" id="ufResp" placeholder="Person / department responsible for this unit">
+      <div class="row2">
+        <div><label>Date</label><input type="date" id="ufDate"></div>
+        <div><label>Shift</label>
+          <select id="ufShift">
+            <option>Shift A</option><option>Shift B</option><option>Shift C</option><option>General</option>
+          </select>
+        </div>
+      </div>
+      <div class="mini-btn-row">
+        <button class="mini-btn save" id="ufSave">Save Unit</button>
+        <button class="mini-btn cancel" id="ufCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-strip">
+    <div class="sum-chip"><span class="n" id="sumTotal">0</span><span class="l">Items</span></div>
+    <div class="sum-chip ok"><span class="n" id="sumOk">0</span><span class="l">Compliant</span></div>
+    <div class="sum-chip obs"><span class="n" id="sumObs">0</span><span class="l">Watch</span></div>
+    <div class="sum-chip ng"><span class="n" id="sumNg">0</span><span class="l">Non-Compl.</span></div>
+  </div>
+
+  <!-- ADD ITEM -->
+  <div class="card" id="captureCard">
+    <h2><span class="lbl">Capture Observation</span></h2>
+    <div id="captureDisabled" class="disabled-note" style="display:none;">Start a Plant / Unit above to begin capturing items.</div>
+    <div id="captureForm">
+
+      <button class="voice-btn" id="voiceBtn">🎤 Voice Fill (AI)</button>
+      <div class="voice-status" id="voiceStatus"></div>
+
+      <label>5S Pillar</label>
+      <div class="pillars" id="pillars">
+        <div class="pillar-btn" data-v="Sort (Seiri)"><span class="jp">整理</span>Sort</div>
+        <div class="pillar-btn" data-v="Set in Order (Seiton)"><span class="jp">整頓</span>Set Order</div>
+        <div class="pillar-btn" data-v="Shine (Seiso)"><span class="jp">清掃</span>Shine</div>
+        <div class="pillar-btn" data-v="Standardize (Seiketsu)"><span class="jp">清潔</span>Standard</div>
+        <div class="pillar-btn" data-v="Sustain (Shitsuke)"><span class="jp">躾</span>Sustain</div>
+      </div>
+
+      <label>Area / Location</label>
+      <input type="text" id="fArea" placeholder="e.g. Tool crib, Bay 3">
+
+      <label>Photo</label>
+      <div class="photo-zone">
+        <div class="photo-btn" id="photoBtn">📷 Tap to capture photo</div>
+        <img class="photo-preview" id="photoPreview">
+        <input type="file" id="photoInput" accept="image/*" capture="environment">
+      </div>
+
+      <label>Observation</label>
+      <textarea id="fObs" placeholder="Describe the finding..."></textarea>
+
+      <label>Status</label>
+      <div class="status-row" id="statusRow">
+        <div class="status-btn" data-v="ok">Compliant</div>
+        <div class="status-btn" data-v="obs">Watch</div>
+        <div class="status-btn" data-v="ng">Non-Compl.</div>
+      </div>
+
+      <button class="add-btn" id="addBtn">+ Add Line Item</button>
+    </div>
+  </div>
+
+  <!-- ITEMS LIST -->
+  <div class="card">
+    <h2><span class="lbl">Captured Items (<span id="countLabel">0</span>)</span></h2>
+    <div id="itemsList"><div class="empty">No items yet.</div></div>
+  </div>
+
+  <!-- PAST AUDITS -->
+  <div class="card" id="archiveCard" style="display:none;">
+    <h2><span class="lbl">Past Audits</span></h2>
+    <div id="archiveList"></div>
+  </div>
+
+</section>
+
+<div class="footer-bar">
+  <button class="btn-clear" id="clearBtn">New Audit</button>
+  <button class="btn-pdf" id="pdfBtn" style="flex:1.1;">PDF Report</button>
+  <button class="btn-pdf" id="pptxBtn" style="flex:1.1; background:#3a3a3a; color:#fff;">PPTX Report</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { jsPDF } = window.jspdf;
+const $ = id => document.getElementById(id);
+
+// ---- Set your Cloudflare Worker URL here after deploying worker.js ----
+const AI_WORKER_URL = 'https://5s-audit-ai.YOUR-SUBDOMAIN.workers.dev/extract';
+
+// localStorage-backed shim so the rest of the app can keep calling
+// window.storage.get/set/delete/list exactly like it does inside a Claude artifact.
+window.storage = {
+  async get(key, shared){
+    const raw = localStorage.getItem('5s_' + key);
+    if(raw === null) throw new Error('not found');
+    return { key, value: raw, shared: !!shared };
+  },
+  async set(key, value, shared){
+    try{ localStorage.setItem('5s_' + key, value); return { key, value, shared: !!shared }; }
+    catch(e){ return null; } // e.g. quota exceeded
+  },
+  async delete(key, shared){
+    localStorage.removeItem('5s_' + key);
+    return { key, deleted: true, shared: !!shared };
+  },
+  async list(prefix, shared){
+    const p = '5s_' + (prefix || '');
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(p)).map(k => k.slice(3));
+    return { keys, prefix, shared: !!shared };
+  }
+};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+// ---- Brand assets for the template PDF/PPTX (place logo.png + cover-bg.jpg next to index.html) ----
+let logoDataUrl = null, logoDims = { w:1, h:1 };
+let coverBgDataUrl = null;
+
+function loadImageAsDataUrl(url){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>{
+      try{
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img,0,0);
+        resolve({ dataUrl: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+      }catch(e){ resolve({ dataUrl:null, w:1, h:1 }); }
+    };
+    img.onerror = ()=> resolve({ dataUrl:null, w:1, h:1 });
+    img.src = url;
+  });
+}
+
+async function preloadBrandAssets(){
+  const logo = await loadImageAsDataUrl('logo.png');
+  logoDataUrl = logo.dataUrl; logoDims = { w: logo.w, h: logo.h };
+  const cover = await loadImageAsDataUrl('cover-bg.jpg');
+  coverBgDataUrl = cover.dataUrl;
+}
+
+let auditor = '';
+let sessions = [];          // {id, plant, resp, date, shift, items:[]}
+let currentSessionId = null;
+let editingUnit = false;     // true if unitForm is open to edit the active session
+let archiveIndex = [];       // [{id, auditor, savedAt, plants, itemCount}]
+
+let currentPillar = null;
+let currentStatus = null;
+let currentPhoto = null;
+let editingItemId = null;    // item currently in inline edit mode
+
+const DRAFT_KEY = 'audit-draft-v2';
+const ARCHIVE_INDEX_KEY = 'archived-audits-index';
+
+const statusLabel = {ok:'Compliant', obs:'Watch', ng:'Non-Compliant'};
+const statusColorPdf = {ok:[63,174,92], obs:[224,161,58], ng:[217,70,60]};
+const pillarShort = p => p.split(' ')[0];
+
+// ---------------- init ----------------
+(async function init(){
+  $('ufDate').value = new Date().toISOString().slice(0,10);
+  await loadDraft();
+  await loadArchiveIndex();
+  preloadBrandAssets();
+  render();
+})();
+
+// ---------------- auditor persistence ----------------
+$('fAuditor').addEventListener('input', ()=>{ auditor = $('fAuditor').value; saveDraft(); });
+
+// ---------------- unit tabs ----------------
+function renderTabs(){
+  const box = $('unitTabs');
+  box.innerHTML = '';
+  sessions.forEach(s=>{
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (s.id===currentSessionId ? ' active' : '');
+    tab.textContent = s.plant || 'Unit';
+    tab.onclick = ()=>{ currentSessionId = s.id; editingUnit=false; saveDraft(); render(); };
+    box.appendChild(tab);
+  });
+  const addTab = document.createElement('div');
+  addTab.className = 'tab addtab';
+  addTab.textContent = '+ New Plant/Unit';
+  addTab.onclick = openNewUnitForm;
+  box.appendChild(addTab);
+}
+
+function openNewUnitForm(){
+  editingUnit = 'new';
+  $('ufPlant').value = '';
+  $('ufResp').value = '';
+  $('ufDate').value = new Date().toISOString().slice(0,10);
+  $('ufShift').value = 'General';
+  $('unitForm').style.display = 'block';
+  $('unitMetaBox').style.display = 'none';
+  $('ufPlant').focus();
+}
+
+function openEditUnitForm(){
+  const s = sessions.find(x=>x.id===currentSessionId);
+  if(!s) return;
+  editingUnit = 'edit';
+  $('ufPlant').value = s.plant;
+  $('ufResp').value = s.resp;
+  $('ufDate').value = s.date;
+  $('ufShift').value = s.shift;
+  $('unitForm').style.display = 'block';
+  $('unitMetaBox').style.display = 'none';
+}
+
+$('ufCancel').addEventListener('click', ()=>{
+  editingUnit = false;
+  $('unitForm').style.display = 'none';
+  $('unitMetaBox').style.display = 'block';
+  render();
+});
+
+$('ufSave').addEventListener('click', ()=>{
+  const plant = $('ufPlant').value.trim();
+  const resp = $('ufResp').value.trim();
+  const date = $('ufDate').value;
+  const shift = $('ufShift').value;
+  if(!plant){ toast('Enter Plant / Unit name'); return; }
+  if(!resp){ toast('Enter Responsibility'); return; }
+
+  if(editingUnit === 'new'){
+    const s = { id: Date.now(), plant, resp, date, shift, items: [] };
+    sessions.push(s);
+    currentSessionId = s.id;
+  } else if(editingUnit === 'edit'){
+    const s = sessions.find(x=>x.id===currentSessionId);
+    if(s){ s.plant=plant; s.resp=resp; s.date=date; s.shift=shift; }
+  }
+  editingUnit = false;
+  $('unitForm').style.display = 'none';
+  saveDraft();
+  render();
+  toast('Unit saved');
+});
+
+function renderUnitMeta(){
+  const box = $('unitMetaBox');
+  const s = sessions.find(x=>x.id===currentSessionId);
+  if(!s){
+    box.innerHTML = '';
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="unit-meta">
+      <b>${escapeHtml(s.plant)}</b> · ${s.date || '—'} · ${s.shift || '—'}<br>
+      Responsibility: <b>${escapeHtml(s.resp)}</b>
+    </div>
+    <span class="unit-edit-link" id="editUnitLink">Edit unit details</span>
+  `;
+  $('editUnitLink').onclick = openEditUnitForm;
+}
+
+// ---------------- capture form enable/disable ----------------
+function renderCaptureAvailability(){
+  const has = sessions.some(s=>s.id===currentSessionId);
+  $('captureDisabled').style.display = has ? 'none' : 'block';
+  $('captureForm').style.display = has ? 'block' : 'none';
+}
+
+// ---------------- pillar / status selection ----------------
+document.querySelectorAll('#pillars .pillar-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#pillars .pillar-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPillar = btn.dataset.v;
+  });
+});
+document.querySelectorAll('#statusRow .status-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#statusRow .status-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.v;
+  });
+});
+
+// ---------------- photo capture ----------------
+$('photoBtn').addEventListener('click', ()=> $('photoInput').click());
+$('photoInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    // single, smaller compressed copy used for both on-screen thumbnail and PDF —
+    // keeps each archived audit well under the per-key storage limit
+    compressImage(ev.target.result, 480, 0.55, (dataUrl)=>{
+      currentPhoto = { full: dataUrl, thumb: dataUrl };
+      $('photoPreview').src = dataUrl;
+      $('photoPreview').classList.add('show');
+      $('photoBtn').textContent = '✓ Photo captured — tap to retake';
+    });
+  };
+  reader.readAsDataURL(file);
+});
+
+function compressImage(dataUrl, maxDim, quality, cb){
+  const img = new Image();
+  img.onload = ()=>{
+    let w = img.width, h = img.height;
+    if(w > h && w > maxDim){ h = Math.round(h * maxDim/w); w = maxDim; }
+    else if(h >= w && h > maxDim){ w = Math.round(w * maxDim/h); h = maxDim; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
+// ---------------- voice fill (AI) ----------------
+let recognizer = null;
+$('voiceBtn').addEventListener('click', startVoiceFill);
+
+function startVoiceFill(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    $('voiceStatus').textContent = 'Voice input not supported on this browser — please type instead.';
+    return;
+  }
+  if(recognizer){ try{ recognizer.stop(); }catch(e){} }
+  recognizer = new SR();
+  recognizer.lang = 'en-IN';
+  recognizer.interimResults = false;
+  recognizer.maxAlternatives = 1;
+
+  $('voiceBtn').classList.add('listening');
+  $('voiceBtn').textContent = '🎤 Listening…';
+  $('voiceStatus').textContent = 'Speak the observation, e.g. "Tool crib area, tools scattered on the floor, not compliant"';
+
+  recognizer.onresult = async (e)=>{
+    const transcript = e.results[0][0].transcript;
+    $('voiceStatus').textContent = 'Heard: "' + transcript + '" — extracting details…';
+    await extractWithAI(transcript);
+  };
+  recognizer.onerror = (e)=>{
+    stopListeningUI();
+    if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      $('voiceStatus').textContent = 'Microphone permission was denied. Allow microphone access for this site in your browser settings, then try again.';
+    } else {
+      $('voiceStatus').textContent = 'Could not capture audio (' + e.error + '). Try again.';
+    }
+  };
+  recognizer.onend = stopListeningUI;
+
+  try{ recognizer.start(); }catch(e){ stopListeningUI(); }
+}
+
+function stopListeningUI(){
+  $('voiceBtn').classList.remove('listening');
+  $('voiceBtn').textContent = '🎤 Voice Fill (AI)';
+}
+
+async function extractWithAI(transcript){
+  try{
+    const sysPrompt = `You are extracting structured 5S workplace-audit data from a spoken observation by a factory floor auditor.
+Return ONLY minified JSON, no markdown, no commentary, with exactly these keys:
+{"pillar": one of ["Sort (Seiri)","Set in Order (Seiton)","Shine (Seiso)","Standardize (Seiketsu)","Sustain (Shitsuke)"], "area": short string naming the location/area, "observation": a clear, one-to-two sentence audit observation written in professional audit language, "status": one of ["ok","obs","ng"] where ok=fully compliant, obs=minor issue worth watching, ng=non-compliant / needs correction}
+Infer the best value for every field from context even if not stated explicitly. Never leave a field empty.
+Transcript: "${transcript}"`;
+
+    const response = await fetch(AI_WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript, prompt: sysPrompt })
+    });
+
+    if(!response.ok){
+      const errBody = await response.text();
+      $('voiceStatus').textContent = 'Worker error ' + response.status + ': ' + errBody.slice(0,150);
+      return;
+    }
+
+    const data = await response.json();
+    if(data.error){
+      $('voiceStatus').textContent = 'AI error: ' + String(data.error).slice(0,150);
+      return;
+    }
+
+    let text = (data.text || '').trim();
+    text = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+
+    // apply pillar
+    const validPillars = ["Sort (Seiri)","Set in Order (Seiton)","Shine (Seiso)","Standardize (Seiketsu)","Sustain (Shitsuke)"];
+    if(validPillars.includes(parsed.pillar)){
+      currentPillar = parsed.pillar;
+      document.querySelectorAll('#pillars .pillar-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.v === parsed.pillar);
+      });
+    }
+    // apply area / observation
+    if(parsed.area) $('fArea').value = parsed.area;
+    if(parsed.observation) $('fObs').value = parsed.observation;
+    // apply status
+    if(['ok','obs','ng'].includes(parsed.status)){
+      currentStatus = parsed.status;
+      document.querySelectorAll('#statusRow .status-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.v === parsed.status);
+      });
+    }
+    $('voiceStatus').textContent = 'Fields filled — review and add photo, then tap Add Line Item.';
+  }catch(err){
+    $('voiceStatus').textContent = 'Request failed: ' + (err && err.message ? err.message : err);
+  }
+}
+
+// ---------------- add item ----------------
+$('addBtn').addEventListener('click', ()=>{
+  const s = sessions.find(x=>x.id===currentSessionId);
+  if(!s){ toast('Start a Plant / Unit first'); return; }
+  const area = $('fArea').value.trim();
+  const obs = $('fObs').value.trim();
+
+  if(!currentPillar){ toast('Select a 5S pillar'); return; }
+  if(!area){ toast('Enter area / location'); $('fArea').focus(); return; }
+  if(!obs){ toast('Add an observation'); $('fObs').focus(); return; }
+  if(!currentStatus){ toast('Select a status'); return; }
+
+  s.items.push({
+    id: Date.now(),
+    pillar: currentPillar,
+    area, obs,
+    status: currentStatus,
+    photo: currentPhoto
+  });
+
+  $('fArea').value=''; $('fObs').value='';
+  document.querySelectorAll('#pillars .pillar-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#statusRow .status-btn').forEach(b=>b.classList.remove('active'));
+  currentPillar = null; currentStatus = null; currentPhoto = null;
+  $('photoPreview').classList.remove('show'); $('photoPreview').src='';
+  $('photoBtn').textContent = '📷 Tap to capture photo';
+  $('photoInput').value = '';
+  $('voiceStatus').textContent = '';
+
+  saveDraft();
+  render();
+  toast('Item added');
+});
+
+// ---------------- inline item edit ----------------
+function beginEditItem(sessionId, itemId){
+  editingItemId = itemId;
+  render();
+}
+function cancelEditItem(){
+  editingItemId = null;
+  render();
+}
+function saveEditItem(sessionId, itemId){
+  const s = sessions.find(x=>x.id===sessionId);
+  const it = s.items.find(x=>x.id===itemId);
+  const wrap = document.getElementById('edit-'+itemId);
+  it.pillar = wrap.querySelector('.e-pillar').value;
+  it.area = wrap.querySelector('.e-area').value.trim();
+  it.obs = wrap.querySelector('.e-obs').value.trim();
+  const activeStatus = wrap.querySelector('.status-btn.active');
+  it.status = activeStatus ? activeStatus.dataset.v : it.status;
+  editingItemId = null;
+  saveDraft();
+  render();
+  toast('Item updated');
+}
+function deleteItem(sessionId, itemId){
+  const s = sessions.find(x=>x.id===sessionId);
+  s.items = s.items.filter(i=>i.id!==itemId);
+  saveDraft();
+  render();
+}
+window.beginEditItem = beginEditItem;
+window.cancelEditItem = cancelEditItem;
+window.saveEditItem = saveEditItem;
+window.deleteItem = deleteItem;
+window.setEditStatus = function(itemId, val){
+  const wrap = document.getElementById('edit-'+itemId);
+  wrap.querySelectorAll('.status-btn').forEach(b=>b.classList.toggle('active', b.dataset.v===val));
+};
+
+// ---------------- new audit (archive current, reset) ----------------
+$('clearBtn').addEventListener('click', async ()=>{
+  const totalItems = sessions.reduce((n,s)=>n+s.items.length,0);
+  if(totalItems > 0){
+    if(!confirm('Start a new audit? The current audit will be saved to Past Audits and the form cleared.')) return;
+    await archiveCurrentAudit();
+  } else if(sessions.length>0){
+    if(!confirm('Start a new audit? Current unit setup will be cleared.')) return;
+  }
+  auditor = ''; sessions = []; currentSessionId = null; editingUnit=false; editingItemId=null;
+  $('fAuditor').value = '';
+  $('unitForm').style.display = 'none';
+  saveDraft();
+  render();
+  toast('New audit started');
+});
+
+async function archiveCurrentAudit(){
+  const id = 'a' + Date.now();
+  const plants = sessions.map(s=>s.plant);
+  const itemCount = sessions.reduce((n,s)=>n+s.items.length,0);
+  try{
+    if(!window.storage){
+      toast('Storage unavailable — downloading PDF as backup instead');
+      generatePdf({ auditor, sessions }, null);
+      return false;
+    }
+    const setResult = await window.storage.set('archived:'+id, JSON.stringify({ auditor, sessions }), false);
+    if(!setResult){
+      toast('Storage limit reached — downloading PDF as backup instead');
+      generatePdf({ auditor, sessions }, null);
+      return false;
+    }
+    const meta = { id, auditor, savedAt: new Date().toISOString(), plants, itemCount };
+    archiveIndex.unshift(meta);
+    await window.storage.set(ARCHIVE_INDEX_KEY, JSON.stringify(archiveIndex), false);
+    return true;
+  }catch(e){
+    toast('Could not save to history — downloading PDF as backup instead');
+    generatePdf({ auditor, sessions }, null);
+    return false;
+  }
+}
+
+window.editArchivedAudit = async function(id){
+  try{
+    const totalItems = sessions.reduce((n,s)=>n+s.items.length,0);
+    if(totalItems > 0){
+      if(!confirm('Loading this audit will archive your current unsaved work first. Continue?')) return;
+      await archiveCurrentAudit();
+    }
+    toast('Loading audit...');
+    const res = await window.storage.get('archived:'+id, false);
+    if(!res || !res.value){ toast('Could not load that audit'); return; }
+    const data = JSON.parse(res.value);
+    auditor = data.auditor || '';
+    sessions = data.sessions || [];
+    currentSessionId = sessions[0] ? sessions[0].id : null;
+    $('fAuditor').value = auditor;
+    archiveIndex = archiveIndex.filter(a=>a.id!==id);
+    if(window.storage) await window.storage.set(ARCHIVE_INDEX_KEY, JSON.stringify(archiveIndex), false);
+    saveDraft();
+    render();
+    toast('Audit loaded — you can edit it now');
+  }catch(e){ toast('Could not load that audit'); }
+};
+
+// ---------------- render ----------------
+function render(){
+  renderTabs();
+  renderUnitMeta();
+  renderCaptureAvailability();
+
+  const allItems = sessions.flatMap(s=>s.items);
+  $('countLabel').textContent = allItems.length;
+  $('sumTotal').textContent = allItems.length;
+  $('sumOk').textContent = allItems.filter(i=>i.status==='ok').length;
+  $('sumObs').textContent = allItems.filter(i=>i.status==='obs').length;
+  $('sumNg').textContent = allItems.filter(i=>i.status==='ng').length;
+
+  const activeUnit = sessions.find(s=>s.id===currentSessionId);
+  $('headerSub').textContent = (auditor ? auditor+' · ' : '') + (activeUnit ? activeUnit.plant+' · ' : '') + allItems.length + ' item' + (allItems.length===1?'':'s');
+
+  const list = $('itemsList');
+  if(sessions.length===0 || allItems.length===0){
+    list.innerHTML = '<div class="empty">No items yet.</div>';
+  } else {
+    list.innerHTML = sessions.map(s=>{
+      if(s.items.length===0) return '';
+      const rows = s.items.map(it=> it.id===editingItemId ? editItemHtml(s,it) : itemHtml(s,it) ).join('');
+      return `<div class="group-header">${escapeHtml(s.plant)} <span class="gh-meta">${s.date||''} · ${escapeHtml(s.resp||'')}</span></div>${rows}`;
+    }).join('');
+  }
+
+  $('pdfBtn').disabled = allItems.length === 0;
+  $('pptxBtn').disabled = allItems.length === 0;
+
+  // archive list
+  if(archiveIndex.length){
+    $('archiveCard').style.display = 'block';
+    $('archiveList').innerHTML = archiveIndex.map(a=>`
+      <div class="archive-row">
+        <div class="archive-info">
+          <div class="a-title">${escapeHtml(a.plants.join(', ') || 'Audit')}</div>
+          <div class="a-sub">${escapeHtml(a.auditor||'—')} · ${new Date(a.savedAt).toLocaleDateString()} · ${a.itemCount} items</div>
+        </div>
+        <div class="archive-btn-group">
+          <button class="archive-pdf-btn" style="background:#3a3a3a;color:#ddd;" onclick="editArchivedAudit('${a.id}')">Edit</button>
+          <button class="archive-pdf-btn" onclick="generateArchivedPdf('${a.id}')">PDF</button>
+          <button class="archive-pdf-btn" style="background:#3a3a3a;color:#fff;" onclick="generateArchivedPptx('${a.id}')">PPTX</button>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    $('archiveCard').style.display = 'none';
+  }
+}
+
+function itemHtml(s, it){
+  return `
+    <div class="item">
+      ${it.photo ? `<img src="${it.photo.thumb}">` : `<div class="noimg">NO<br>PHOTO</div>`}
+      <div class="item-body">
+        <div class="item-top">
+          <span class="item-tag">${pillarShort(it.pillar)}</span>
+          <span class="item-status ${it.status}">${statusLabel[it.status]}</span>
+        </div>
+        <div class="item-area">${escapeHtml(it.area)}</div>
+        <div class="item-obs">${escapeHtml(it.obs)}</div>
+      </div>
+      <div class="item-actions">
+        <button class="edit-i" onclick="beginEditItem(${s.id},${it.id})">✎</button>
+        <button class="del-i" onclick="deleteItem(${s.id},${it.id})">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function editItemHtml(s, it){
+  const pillars = ["Sort (Seiri)","Set in Order (Seiton)","Shine (Seiso)","Standardize (Seiketsu)","Sustain (Shitsuke)"];
+  return `
+    <div class="item" id="edit-${it.id}">
+      ${it.photo ? `<img src="${it.photo.thumb}">` : `<div class="noimg">NO<br>PHOTO</div>`}
+      <div class="item-edit-body">
+        <select class="e-pillar">
+          ${pillars.map(p=>`<option value="${p}" ${p===it.pillar?'selected':''}>${p}</option>`).join('')}
+        </select>
+        <input type="text" class="e-area" value="${escapeAttr(it.area)}" placeholder="Area">
+        <textarea class="e-obs" placeholder="Observation">${escapeHtml(it.obs)}</textarea>
+        <div class="edit-status-row">
+          <div class="status-btn ${it.status==='ok'?'active':''}" data-v="ok" onclick="setEditStatus(${it.id},'ok')">Compliant</div>
+          <div class="status-btn ${it.status==='obs'?'active':''}" data-v="obs" onclick="setEditStatus(${it.id},'obs')">Watch</div>
+          <div class="status-btn ${it.status==='ng'?'active':''}" data-v="ng" onclick="setEditStatus(${it.id},'ng')">Non-Compl.</div>
+        </div>
+        <div class="edit-save-row">
+          <button class="save-i" onclick="saveEditItem(${s.id},${it.id})">Save</button>
+          <button class="cancel-i" onclick="cancelEditItem()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+// ---------------- toast ----------------
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ---------------- draft persistence ----------------
+function saveDraft(){
+  try{
+    const payload = { auditor, sessions, currentSessionId };
+    window.storage && window.storage.set(DRAFT_KEY, JSON.stringify(payload), false).catch(()=>{});
+  }catch(e){}
+}
+async function loadDraft(){
+  try{
+    if(!window.storage) return;
+    const res = await window.storage.get(DRAFT_KEY, false);
+    if(res && res.value){
+      const d = JSON.parse(res.value);
+      auditor = d.auditor || '';
+      sessions = d.sessions || [];
+      currentSessionId = d.currentSessionId || (sessions[0] && sessions[0].id) || null;
+      $('fAuditor').value = auditor;
+    }
+  }catch(e){ /* no draft yet */ }
+}
+async function loadArchiveIndex(){
+  try{
+    if(!window.storage) return;
+    const res = await window.storage.get(ARCHIVE_INDEX_KEY, false);
+    if(res && res.value) archiveIndex = JSON.parse(res.value);
+  }catch(e){ archiveIndex = []; }
+}
+
+// ---------------- Report generation (matches the "5S Observations" template) ----------------
+const PAGE_W = 11.69, PAGE_H = 8.27; // A4 landscape, inches
+const CONTENT = { top: 0.85, bottom: 7.6, left: 0.3, right: 11.39 };
+const FOOTERBAR = { y: 7.67, h: 0.6, xStart: 2.88 };
+const STATUS_HEX = { ok:'3FAE5C', obs:'E0A13A', ng:'D9463C' };
+
+$('pdfBtn').addEventListener('click', ()=> generatePdf({ auditor, sessions }, null));
+$('pptxBtn').addEventListener('click', ()=> generatePptx({ auditor, sessions }));
+
+window.generateArchivedPdf = async function(id){
+  try{
+    toast('Loading archived audit...');
+    const res = await window.storage.get('archived:'+id, false);
+    if(!res || !res.value){ toast('Could not load that audit'); return; }
+    generatePdf(JSON.parse(res.value), id);
+  }catch(e){ toast('Could not load that audit'); }
+};
+window.generateArchivedPptx = async function(id){
+  try{
+    toast('Loading archived audit...');
+    const res = await window.storage.get('archived:'+id, false);
+    if(!res || !res.value){ toast('Could not load that audit'); return; }
+    generatePptx(JSON.parse(res.value));
+  }catch(e){ toast('Could not load that audit'); }
+};
+
+function chunk3(items){
+  const out = [];
+  for(let i=0;i<items.length;i+=3) out.push(items.slice(i,i+3));
+  return out;
+}
+
+// ---- PDF ----
+function generatePdf(auditData, archiveId){
+  const sess = (auditData.sessions || []).filter(s=>s.items && s.items.length);
+  if(sess.length===0){ toast('No items to report'); return; }
+  toast('Building PDF...');
+
+  const doc = new jsPDF({ orientation:'landscape', unit:'in', format:'a4' });
+
+  drawPdfCover(doc, auditData, sess);
+
+  sess.forEach(s=>{
+    chunk3(s.items).forEach(pageItems=>{
+      doc.addPage();
+      drawPdfChrome(doc, s.plant, s.date || '—');
+      const gap = 0.14;
+      const cardH = (CONTENT.bottom - CONTENT.top - gap*2) / 3;
+      pageItems.forEach((it, idx)=>{
+        const cy = CONTENT.top + idx*(cardH+gap);
+        drawPdfCard(doc, CONTENT.left, cy, CONTENT.right-CONTENT.left, cardH, it, s.resp);
+      });
+    });
+  });
+
+  doc.addPage();
+  drawPdfThankYou(doc);
+
+  const fname = `5S-Observations_${(auditData.auditor||'report').replace(/\s+/g,'-')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(fname);
+  toast('PDF downloaded');
+}
+
+function drawPdfCover(doc, auditData, sess){
+  if(coverBgDataUrl){
+    try{ doc.addImage(coverBgDataUrl,'JPEG',0,0,PAGE_W,PAGE_H); }
+    catch(e){ doc.setFillColor(15,15,15); doc.rect(0,0,PAGE_W,PAGE_H,'F'); }
+  } else { doc.setFillColor(15,15,15); doc.rect(0,0,PAGE_W,PAGE_H,'F'); }
+
+  if(logoDataUrl){
+    try{
+      const lw=1.7, lh = lw*(logoDims.h/logoDims.w);
+      doc.addImage(logoDataUrl,'PNG',0.4,0.35,lw,lh);
+    }catch(e){}
+  }
+
+  doc.setFont('times','normal'); doc.setFontSize(11); doc.setTextColor(255,255,255);
+  doc.text(new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), PAGE_W-0.4, 0.6, {align:'right'});
+
+  doc.setFont('times','bold'); doc.setFontSize(34); doc.setTextColor(255,255,255);
+  doc.text('5S Observations', PAGE_W/2, 3.55, {align:'center'});
+
+  doc.setFontSize(15); doc.setTextColor(237,27,36);
+  doc.text(sess.map(s=>s.plant).join(' · '), PAGE_W/2, 4.1, {align:'center', maxWidth: PAGE_W-2});
+
+  doc.setFont('times','normal'); doc.setFontSize(11); doc.setTextColor(230,230,230);
+  doc.text('Auditor: ' + (auditData.auditor||'—'), PAGE_W/2, 4.55, {align:'center'});
+
+  doc.setFontSize(9); doc.setTextColor(200,200,200);
+  doc.text('Privileged & Confidential', 0.4, PAGE_H-0.35);
+}
+
+function drawPdfChrome(doc, unitLabel, dateLabel){
+  doc.setTextColor(255,0,0);
+  doc.setFont('times','bold'); doc.setFontSize(22);
+  doc.text('5S Observations', 0.3, 0.55);
+
+  doc.setFillColor(237,27,36);
+  doc.rect(FOOTERBAR.xStart, FOOTERBAR.y, PAGE_W-FOOTERBAR.xStart, FOOTERBAR.h, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('times','normal'); doc.setFontSize(9);
+  doc.text(`${unitLabel}  |  ${dateLabel}`, FOOTERBAR.xStart+0.15, FOOTERBAR.y+0.38);
+  doc.text('Create | Collaborate | Inspire', 8.35, FOOTERBAR.y+0.38);
+  doc.text(String(doc.internal.getNumberOfPages()), PAGE_W-0.4, FOOTERBAR.y+0.38, {align:'right'});
+
+  if(logoDataUrl){
+    try{
+      const lw=1.6, lh = lw*(logoDims.h/logoDims.w);
+      doc.addImage(logoDataUrl,'PNG',0.25, FOOTERBAR.y+(FOOTERBAR.h-lh)/2, lw, lh);
+    }catch(e){}
+  }
+}
+
+function drawPdfCard(doc, x, y, w, h, it, unitResp){
+  doc.setDrawColor(225,225,225); doc.setFillColor(248,248,248);
+  doc.roundedRect(x,y,w,h,0.06,0.06,'FD');
+
+  const photoSize = Math.min(h-0.24, 1.9);
+  const photoX = x+0.14, photoY = y+(h-photoSize)/2;
+  if(it.photo && it.photo.full){
+    try{ doc.addImage(it.photo.full,'JPEG',photoX,photoY,photoSize,photoSize); }catch(e){}
+  } else {
+    doc.setFillColor(230,230,230); doc.rect(photoX,photoY,photoSize,photoSize,'F');
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text('No photo', photoX+photoSize/2, photoY+photoSize/2, {align:'center'});
+  }
+
+  const textX = photoX+photoSize+0.22;
+  const textW = (x+w-0.14) - textX;
+  let cy = y+0.28;
+
+  doc.setFillColor(237,27,36);
+  doc.roundedRect(textX, cy-0.16, 1.0, 0.24, 0.04,0.04,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+  doc.text(it.pillar.split(' ')[0].toUpperCase(), textX+0.5, cy+0.005, {align:'center'});
+
+  const stColor = statusColorPdf[it.status];
+  doc.setFillColor(stColor[0],stColor[1],stColor[2]);
+  doc.roundedRect(textX+1.1, cy-0.16, 1.15, 0.24, 0.04,0.04,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8);
+  doc.text(statusLabel[it.status].toUpperCase(), textX+1.675, cy+0.005, {align:'center'});
+
+  cy += 0.34;
+  doc.setFont('times','bold'); doc.setFontSize(13); doc.setTextColor(30,30,30);
+  doc.text(it.area, textX, cy);
+
+  cy += 0.26;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(70,70,70);
+  const obsLines = doc.splitTextToSize(it.obs, textW);
+  const maxLines = Math.max(1, Math.floor((h - (cy-y) - 0.22) / 0.17));
+  doc.text(obsLines.slice(0,maxLines), textX, cy);
+
+  if(unitResp){
+    doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(120,120,120);
+    doc.text('Responsibility: ' + unitResp, textX, y+h-0.15);
+  }
+}
+
+function drawPdfThankYou(doc){
+  doc.setFillColor(255,255,255); doc.rect(0,0,PAGE_W,PAGE_H,'F');
+  doc.setTextColor(255,0,0); doc.setFont('times','bold'); doc.setFontSize(40);
+  doc.text('Thank You', PAGE_W/2, PAGE_H/2, {align:'center'});
+  doc.setFont('times','normal'); doc.setFontSize(10); doc.setTextColor(180,180,180);
+  doc.text(new Date().toLocaleDateString(), PAGE_W/2, PAGE_H/2+0.5, {align:'center'});
+}
+
+// ---- PPTX ----
+async function generatePptx(auditData){
+  const sess = (auditData.sessions || []).filter(s=>s.items && s.items.length);
+  if(sess.length===0){ toast('No items to report'); return; }
+  if(typeof PptxGenJS === 'undefined'){ toast('PPTX library failed to load — check your connection'); return; }
+  toast('Building PPTX...');
+
+  const pptx = new PptxGenJS();
+  pptx.defineLayout({ name:'A4L', width:PAGE_W, height:PAGE_H });
+  pptx.layout = 'A4L';
+
+  const cover = pptx.addSlide();
+  cover.background = coverBgDataUrl ? { data: coverBgDataUrl } : { color:'0F0F0F' };
+  if(logoDataUrl){
+    const lw=1.7, lh = lw*(logoDims.h/logoDims.w);
+    cover.addImage({ data: logoDataUrl, x:0.4, y:0.35, w:lw, h:lh });
+  }
+  cover.addText(new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), { x:8, y:0.3, w:3.29, h:0.4, align:'right', color:'FFFFFF', fontFace:'Cambria', fontSize:12 });
+  cover.addText('5S Observations', { x:0.5, y:3.25, w:10.69, h:0.9, align:'center', color:'FFFFFF', fontFace:'Cambria', bold:true, fontSize:34 });
+  cover.addText(sess.map(s=>s.plant).join(' · '), { x:0.5, y:4.1, w:10.69, h:0.5, align:'center', color:'ED1B24', fontFace:'Cambria', bold:true, fontSize:15 });
+  cover.addText('Auditor: ' + (auditData.auditor||'—'), { x:0.5, y:4.6, w:10.69, h:0.4, align:'center', color:'E6E6E6', fontFace:'Cambria', fontSize:11 });
+  cover.addText('Privileged & Confidential', { x:0.4, y:7.85, w:4, h:0.3, color:'CCCCCC', fontFace:'Cambria', fontSize:9 });
+
+  sess.forEach(s=>{
+    chunk3(s.items).forEach(pageItems=>{
+      const slide = pptx.addSlide();
+      slide.background = { color:'FFFFFF' };
+      slide.addText('5S Observations', { x:0.3, y:0.12, w:8, h:0.5, color:'FF0000', fontFace:'Cambria', bold:true, fontSize:22 });
+
+      slide.addShape('rect', { x:FOOTERBAR.xStart, y:FOOTERBAR.y, w:PAGE_W-FOOTERBAR.xStart, h:FOOTERBAR.h, fill:{color:'ED1B24'}, line:{type:'none'} });
+      slide.addText(`${s.plant}  |  ${s.date||'—'}`, { x:FOOTERBAR.xStart+0.12, y:FOOTERBAR.y, w:4.5, h:FOOTERBAR.h, color:'FFFFFF', fontFace:'Cambria', fontSize:9, valign:'middle' });
+      slide.addText('Create | Collaborate | Inspire', { x:7.6, y:FOOTERBAR.y, w:3.0, h:FOOTERBAR.h, color:'FFFFFF', fontFace:'Cambria', fontSize:9, valign:'middle', align:'right' });
+      if(logoDataUrl){
+        const lw=1.5, lh = lw*(logoDims.h/logoDims.w);
+        slide.addImage({ data: logoDataUrl, x:0.25, y:FOOTERBAR.y+(FOOTERBAR.h-lh)/2, w:lw, h:lh });
+      }
+
+      const gap = 0.14;
+      const cardH = (CONTENT.bottom - CONTENT.top - gap*2) / 3;
+      pageItems.forEach((it, idx)=>{
+        const cy = CONTENT.top + idx*(cardH+gap);
+        addPptxCard(slide, CONTENT.left, cy, CONTENT.right-CONTENT.left, cardH, it, s.resp);
+      });
+    });
+  });
+
+  const ty = pptx.addSlide();
+  ty.background = { color:'FFFFFF' };
+  ty.addText('Thank You', { x:0.5, y:3.35, w:10.69, h:1, align:'center', color:'FF0000', fontFace:'Cambria', bold:true, fontSize:40 });
+  ty.addText(new Date().toLocaleDateString(), { x:0.5, y:4.45, w:10.69, h:0.4, align:'center', color:'AAAAAA', fontFace:'Cambria', fontSize:10 });
+
+  const fname = `5S-Observations_${(auditData.auditor||'report').replace(/\s+/g,'-')}_${new Date().toISOString().slice(0,10)}.pptx`;
+  await pptx.writeFile({ fileName: fname });
+  toast('PPTX downloaded');
+}
+
+function addPptxCard(slide, x, y, w, h, it, unitResp){
+  slide.addShape('roundRect', { x,y,w,h, rectRadius:0.06, fill:{color:'F8F8F8'}, line:{color:'E0E0E0', width:0.75} });
+
+  const photoSize = Math.min(h-0.24, 1.9);
+  const photoX = x+0.14, photoY = y+(h-photoSize)/2;
+  if(it.photo && it.photo.full){
+    slide.addImage({ data: it.photo.full, x:photoX, y:photoY, w:photoSize, h:photoSize });
+  } else {
+    slide.addShape('rect', { x:photoX, y:photoY, w:photoSize, h:photoSize, fill:{color:'E6E6E6'}, line:{type:'none'} });
+    slide.addText('No photo', { x:photoX, y:photoY, w:photoSize, h:photoSize, align:'center', valign:'middle', color:'999999', fontSize:8 });
+  }
+
+  const textX = photoX+photoSize+0.22;
+  const textW = (x+w-0.14) - textX;
+  let cy = y+0.16;
+
+  slide.addText(it.pillar.split(' ')[0].toUpperCase(), { x:textX, y:cy, w:1.0, h:0.26, fill:{color:'ED1B24'}, color:'FFFFFF', bold:true, fontSize:8, align:'center', valign:'middle' });
+  slide.addText(statusLabel[it.status].toUpperCase(), { x:textX+1.1, y:cy, w:1.15, h:0.26, fill:{color:STATUS_HEX[it.status]}, color:'FFFFFF', bold:true, fontSize:8, align:'center', valign:'middle' });
+
+  cy += 0.36;
+  slide.addText(it.area, { x:textX, y:cy, w:textW, h:0.3, color:'1E1E1E', bold:true, fontFace:'Cambria', fontSize:14 });
+
+  cy += 0.34;
+  const obsH = Math.max(0.3, h - (cy-y) - (unitResp ? 0.28 : 0.1));
+  slide.addText(it.obs, { x:textX, y:cy, w:textW, h:obsH, color:'444444', fontSize:10, valign:'top' });
+
+  if(unitResp){
+    slide.addText('Responsibility: ' + unitResp, { x:textX, y:y+h-0.28, w:textW, h:0.24, color:'888888', italic:true, fontSize:8 });
+  }
+}
+</script>
+</body>
+</html>
