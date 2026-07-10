@@ -1,5 +1,5 @@
-const CACHE = '5s-audit-v1';
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.png', './cover-bg.jpg', './thankyou-bg.jpg'];
+const CACHE = '5s-audit-v2';
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.png', './logo-hero.png', './cover-bg.jpg', './thankyou-bg.jpg', './pptxgen.bundle.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
